@@ -86,6 +86,9 @@ public class OrderActivity extends AppCompatActivity {
             if (!TextUtils.isEmpty(this.order.DeliveryPhoneNo)) {
                 sb.append("\n" + this.order.DeliveryPhoneNo);
             }
+            if (!TextUtils.isEmpty(this.order.CustomerCode)) {
+                sb.append("\n" + this.order.CustomerCode);
+            }
             ((TextView)findViewById(R.id.deliveryView)).setText(sb.toString());
 
             EditText qtyEdit = (EditText)findViewById(R.id.quantityText);

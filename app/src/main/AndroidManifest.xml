@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="hk.com.granda_express.gecollect">
 
+    <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -30,7 +31,9 @@
             android:name=".OrderActivity"
             android:label="@string/title_activity_order"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".PrintActivity"></activity>
+        <activity android:name=".PrintActivity" />
+        <activity android:name=".NewOrdersActivity" />
+        <activity android:name=".PendingOrderActivity"></activity>
     </application>
 
 </manifest>

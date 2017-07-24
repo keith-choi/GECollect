@@ -17,6 +17,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    dataBinding {
+        enabled = true
+    }
 }
 
 dependencies {
@@ -24,12 +27,13 @@ dependencies {
     compile project(':bixolon_printer_v118')
     compile project(':xerces')
     compile project(':jpos114-controls')
+    compile files('libs/signalr-client-sdk.jar')
+    compile files('libs/signalr-client-sdk-android.jar')
     compile 'com.android.support:appcompat-v7:23.4.0'
     compile 'com.android.support:design:23.4.0'
     compile 'com.google.code.gson:gson:2.4'
     compile 'me.dm7.barcodescanner:zxing:1.9'
     compile 'com.android.support:support-v4:23.4.0'
-    compile files('libs/signalr-client-sdk.jar')
-    compile files('libs/signalr-client-sdk-android.jar')
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
     testCompile 'junit:junit:4.12'
 }

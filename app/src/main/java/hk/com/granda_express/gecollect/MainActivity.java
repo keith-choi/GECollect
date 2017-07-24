@@ -8,6 +8,10 @@ import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.service.media.MediaBrowserService;
@@ -25,6 +29,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -33,6 +38,7 @@ import android.widget.Toast;
 import com.bxl.config.editor.BXLConfigLoader;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.internal.ObjectConstructor;
 import com.google.zxing.Result;
 
 import java.io.BufferedReader;
@@ -41,23 +47,22 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Set;
 
 import jpos.JposException;
 import jpos.POSPrinterConst;
 import me.dm7.barcodescanner.zxing.ZXingScannerView;
 import microsoft.aspnet.signalr.client.Action;
+import microsoft.aspnet.signalr.client.ErrorCallback;
 import microsoft.aspnet.signalr.client.Platform;
-import microsoft.aspnet.signalr.client.SignalRFuture;
 import microsoft.aspnet.signalr.client.http.android.AndroidPlatformComponent;
 import microsoft.aspnet.signalr.client.hubs.HubConnection;
 import microsoft.aspnet.signalr.client.hubs.HubProxy;
-import microsoft.aspnet.signalr.client.hubs.SubscriptionHandler;
-import microsoft.aspnet.signalr.client.hubs.SubscriptionHandler1;
 import microsoft.aspnet.signalr.client.transport.ClientTransport;
 import microsoft.aspnet.signalr.client.transport.ServerSentEventsTransport;
-
-import static android.R.attr.id;
 
 public class MainActivity extends AppCompatActivity
         implements ZXingScannerView.ResultHandler,
@@ -76,6 +81,9 @@ public class MainActivity extends AppCompatActivity
     private static HubConnection mHubConnection;
     private static HubProxy mHubProxy;
     private static String mConnectionID;
+    private static Object mSync = new Object();
+
+    private Button newOrdersButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,26 +94,46 @@ public class MainActivity extends AppCompatActivity
 
         Platform.loadPlatformComponent(new AndroidPlatformComponent());
         try {
-            mHubConnection = new HubConnection("http://cm.granda-express.com.hk");
+            mHubConnection = new HubConnection(ServiceUrl.BASE_SERVICE_URL);
             mHubProxy = mHubConnection.createHubProxy("AppEventHub");
-            ClientTransport transport = new ServerSentEventsTransport(mHubConnection.getLogger());
-            //SignalRFuture<Void> signalRFuture = mHubConnection.start(transport);
-            //signalRFuture.get();
-            mHubConnection.start();
-            mConnectionID = mHubConnection.getConnectionId();
-            mHubProxy.on("AppEventHub", new SubscriptionHandler() {
-                public void run() {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            TextView messageView = (TextView) findViewById(R.id.messageView);
-                            messageView.setText("New Order");
-                        }
-                    });
+            mHubConnection.error(new ErrorCallback() {
+                @Override
+                public void onError(Throwable error) {
+                    System.err.println("There was an error communicating with the server.");
+                    System.err.println("Error detail: " + error.toString());
+
+                    error.printStackTrace(System.err);
                 }
             });
-        } catch (Exception e)
-        {
+            mHubProxy.subscribe(new Object() {
+                @SuppressWarnings("unused")
+                public void AckBC(final String msg) {
+                    synchronized (mSync) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (msg.equals("新单") || msg.equals("取消")) {
+                                    DateFormat dateFormat = new SimpleDateFormat("MMM dd,yyyy  hh:mm a");
+                                    if (msg.equals("取消")) {
+                                        newOrdersButton.setBackgroundColor(Color.RED);;
+                                    } else {
+                                        newOrdersButton.setBackgroundColor(Color.BLUE);
+                                    }
+                                    newOrdersButton.setTextColor(Color.WHITE);
+                                    newOrdersButton.setText(msg + ": " + dateFormat.format(new Date()));
+
+                                    Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                                    Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+                                    r.play();
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+            ClientTransport transport = new ServerSentEventsTransport(mHubConnection.getLogger());
+            mHubConnection.start(transport);
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -216,6 +244,9 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
+        newOrdersButton = (Button) findViewById(R.id.button3);
+        newOrdersButton.setBackgroundColor(Color.LTGRAY);;
+        newOrdersButton.setTextColor(Color.BLACK);
     }
 
     private void processOrderId(String id) {
@@ -249,6 +280,14 @@ public class MainActivity extends AppCompatActivity
         mScannerView.setFlash(flash.isChecked());
     }
 
+    public void showNewOrders(View view) {
+        TextView msg = (TextView) findViewById(R.id.messageView);
+        msg.setText("正在载入寄件，请稍候");
+        android.text.format.DateFormat df = new android.text.format.DateFormat();
+        String date = (String) df.format("yyyy-MM-dd", new Date());
+        new RetrieveOrders().execute(date);
+    }
+
     class RetrieveOrder extends AsyncTask<String, Integer, String> {
         @Override
         protected String doInBackground(String... params) {
@@ -261,6 +300,75 @@ public class MainActivity extends AppCompatActivity
             });
             try {
                 URL url = new URL(new ServiceUrl().REST_SERVICE_URL + "/" + params[0]);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                try {
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line).append("\n");
+                    }
+                    bufferedReader.close();
+                    return stringBuilder.toString();
+                } catch (final Exception e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } finally {
+                    connection.disconnect();
+                }
+            } catch (final MalformedURLException e) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            } catch (final IOException e) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(final String result) {
+            super.onPostExecute(result);
+            if (result != null) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView messageView = (TextView) findViewById(R.id.messageView);
+                        messageView.setText("");
+                        Intent intent = new Intent(MainActivity.this, OrderActivity.class);
+                        intent.putExtra("Order", result);
+                        intent.putExtra("UserName", getUserName());
+                        startActivity(intent);
+                    }
+                });
+            }
+        }
+    }
+
+    class RetrieveOrders extends AsyncTask<String, Integer, String> {
+        @Override
+        protected String doInBackground(String... params) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TextView messageView = (TextView) findViewById(R.id.messageView);
+                    messageView.setText("请稍候，正在载入寄件　．．．");
+                }
+            });
+            try {
+                URL url = new URL(new ServiceUrl().PENDING_ORDERS_URL + params[0]);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 try {
                     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -293,14 +401,13 @@ public class MainActivity extends AppCompatActivity
                     public void run() {
                         TextView messageView = (TextView) findViewById(R.id.messageView);
                         messageView.setText("");
-                        Intent intent = new Intent(MainActivity.this, OrderActivity.class);
-                        intent.putExtra("Order", result);
+                        Intent intent = new Intent(MainActivity.this, NewOrdersActivity.class);
+                        intent.putExtra("Orders", result);
                         intent.putExtra("UserName", getUserName());
                         startActivity(intent);
                     }
                 });
             }
         }
-    }
-}
+    }}
 

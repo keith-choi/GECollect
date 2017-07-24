@@ -175,21 +175,23 @@ public class PrintActivity extends AppCompatActivity
             Integer l = 6;
             oposPrintText(LINE_FEED, false);
             // Print delivery information
-            if (!TextUtils.isEmpty(this.order.DeliveryAddress)) {
-                oposPrintText(this.order.DeliveryAddress, true);
-                l--;
-            }
-            if (!TextUtils.isEmpty(this.order.DeliveryCompany)) {
-                oposPrintText(this.order.DeliveryCompany, true);
-                l--;
-            }
-            if (!TextUtils.isEmpty(this.order.DeliveryContact)) {
-                oposPrintText(this.order.DeliveryContact, true);
-                l--;
-            }
-            if (!TextUtils.isEmpty(this.order.DeliveryPhoneNo)) {
-                oposPrintText(this.order.DeliveryPhoneNo, true);
-                l--;
+            if (this.order.CustomerCode.length() == 6) {
+                if (!TextUtils.isEmpty(this.order.DeliveryAddress)) {
+                    oposPrintText(this.order.DeliveryAddress, true);
+                    l--;
+                }
+                if (!TextUtils.isEmpty(this.order.DeliveryCompany)) {
+                    oposPrintText(this.order.DeliveryCompany, true);
+                    l--;
+                }
+                if (!TextUtils.isEmpty(this.order.DeliveryContact)) {
+                    oposPrintText(this.order.DeliveryContact, true);
+                    l--;
+                }
+                if (!TextUtils.isEmpty(this.order.DeliveryPhoneNo)) {
+                    oposPrintText(this.order.DeliveryPhoneNo, true);
+                    l--;
+                }
             }
             if (!TextUtils.isEmpty(this.order.CustomerCode)) {
                 oposPrintText(this.order.CustomerCode, true);
