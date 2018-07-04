@@ -74,8 +74,6 @@ public class OrderActivity extends AppCompatActivity {
             }
             ((TextView)findViewById(R.id.senderView)).setText(sb.toString());
 
-            ((TextView)findViewById(R.id.descriptionView)).setText(this.order.Description);
-
             sb = new StringBuilder(this.order.DeliveryAddress);
             if (!TextUtils.isEmpty(this.order.DeliveryCompany)) {
                 sb.append("\n" + this.order.DeliveryCompany);
@@ -91,6 +89,9 @@ public class OrderActivity extends AppCompatActivity {
             }
             ((TextView)findViewById(R.id.deliveryView)).setText(sb.toString());
 
+            EditText descEdit = (EditText)findViewById(R.id.descriptionText);
+            descEdit.setText(this.order.Description.toString());
+
             EditText qtyEdit = (EditText)findViewById(R.id.quantityText);
             qtyEdit.setText(Integer.toString(this.order.Qty));
             ((EditText)findViewById(R.id.collectAmountText)).setText(Float.toString(this.order.CollectAmount));
@@ -104,8 +105,12 @@ public class OrderActivity extends AppCompatActivity {
             EditText remarksEdit = (EditText)findViewById(R.id.remarksText);
             remarksEdit.setText(this.order.Remarks);
 
+            EditText overSizeEdit = (EditText)findViewById(R.id.overSizeAmountText);
+            overSizeEdit.setText(Float.toString(this.order.OverSizeAmount));
+
             String status = "";
             if (this.order.CollectTime != null) {
+                descEdit.setEnabled(false);
                 qtyEdit.setInputType(0);
                 qtyEdit.setEnabled(false);
                 ((RadioButton)findViewById(R.id.dmDelivery)).setEnabled(false);
@@ -114,6 +119,7 @@ public class OrderActivity extends AppCompatActivity {
                 ((RadioButton)findViewById(R.id.pmHK)).setEnabled(false);
                 ((RadioButton)findViewById(R.id.pmSZ)).setEnabled(false);
                 remarksEdit.setEnabled(false);
+                ((EditText)findViewById(R.id.overSizeAmountText)).setEnabled(false);
                 ((EditText)findViewById(R.id.collectAmountText)).setEnabled(false);
                 status = "貨件于" + android.text.format.DateFormat.format("yyyy-MM-dd hh:mm", this.order.CollectTime) + ", 由" + this.order.CollectedBy + "收取";
 
@@ -129,6 +135,7 @@ public class OrderActivity extends AppCompatActivity {
                 ((RadioButton)findViewById(R.id.pmHK)).setEnabled(true);
                 ((RadioButton)findViewById(R.id.pmSZ)).setEnabled(true);
                 remarksEdit.setEnabled(true);
+                ((EditText)findViewById(R.id.overSizeAmountText)).setEnabled(true);
 
                 ((Button)findViewById(R.id.submit)).setEnabled(true);
                 ((Button)findViewById(R.id.reprint)).setEnabled(false);
@@ -144,6 +151,8 @@ public class OrderActivity extends AppCompatActivity {
             TextView statusView = (TextView) findViewById(R.id.statusView);
             statusView.setText("更新中 ...");
 
+            EditText descText = (EditText) findViewById(R.id.descriptionText);
+            order.Description = descText.getText().toString();
             EditText editText = (EditText) findViewById(R.id.quantityText);
             order.Qty = Integer.parseInt(editText.getText().toString());
             editText = (EditText) findViewById(R.id.collectAmountText);
@@ -156,6 +165,8 @@ public class OrderActivity extends AppCompatActivity {
             order.PaymentMethod = pmHK.isChecked() ? 0 : 1;
             EditText remarksText = (EditText) findViewById(R.id.remarksText);
             order.Remarks = remarksText.getText().toString();
+            EditText oversizeText = (EditText) findViewById(R.id.overSizeAmountText);
+            order.OverSizeAmount = Float.parseFloat(oversizeText.getText().toString());
 
             new saveOrder().execute(this.order);
         } catch (Exception e) {

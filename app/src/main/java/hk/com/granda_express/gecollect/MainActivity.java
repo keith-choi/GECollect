@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity
     private static HubProxy mHubProxy;
     private static String mConnectionID;
     private static Object mSync = new Object();
+    private static Date mLastNotification;
 
     private Button newOrdersButton;
 
@@ -113,6 +114,7 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void run() {
                                 if (msg.equals("新单") || msg.equals("取消")) {
+                                    mLastNotification = new Date();
                                     DateFormat dateFormat = new SimpleDateFormat("MMM dd,yyyy  hh:mm a");
                                     if (msg.equals("取消")) {
                                         newOrdersButton.setBackgroundColor(Color.RED);;
@@ -120,7 +122,7 @@ public class MainActivity extends AppCompatActivity
                                         newOrdersButton.setBackgroundColor(Color.BLUE);
                                     }
                                     newOrdersButton.setTextColor(Color.WHITE);
-                                    newOrdersButton.setText(msg + ": " + dateFormat.format(new Date()));
+                                    newOrdersButton.setText(msg + ": " + dateFormat.format(mLastNotification));
 
                                     Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                                     Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
@@ -195,6 +197,13 @@ public class MainActivity extends AppCompatActivity
         boolean enableFlash = prefs.getBoolean(KEY_LED, false);
         ((CheckBox) findViewById(R.id.enableFlash)).setChecked(enableFlash);
         this.printerName = prefs.getString(KEY_PRINTERNAME, null);
+
+        if (mLastNotification != null) {
+            newOrdersButton.setBackgroundColor(Color.LTGRAY);
+            newOrdersButton.setTextColor(Color.BLACK);
+            DateFormat dateFormat = new SimpleDateFormat("MMM dd,yyyy  hh:mm a");
+            newOrdersButton.setText("上次接收：" + dateFormat.format(mLastNotification));
+        }
     }
 
     @Override
@@ -409,5 +418,6 @@ public class MainActivity extends AppCompatActivity
                 });
             }
         }
-    }}
+    }
+}
 

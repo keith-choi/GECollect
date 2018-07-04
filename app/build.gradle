@@ -1,19 +1,19 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion '25.0.0'
+    compileSdkVersion 26
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         applicationId "hk.com.granda_express.gecollect"
         minSdkVersion 15
-        targetSdkVersion 23
+        targetSdkVersion 15
         versionCode 1
         versionName "1.0"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -24,16 +24,15 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':bixolon_printer_v118')
-    compile project(':xerces')
-    compile project(':jpos114-controls')
+    implementation files('libs/bixolon_printer_v127.jar')
+    implementation files('libs/jpos117-controls.jar')
+    implementation files('libs/xerces.jar')
     compile files('libs/signalr-client-sdk.jar')
     compile files('libs/signalr-client-sdk-android.jar')
-    compile 'com.android.support:appcompat-v7:23.4.0'
-    compile 'com.android.support:design:23.4.0'
-    compile 'com.google.code.gson:gson:2.4'
-    compile 'me.dm7.barcodescanner:zxing:1.9'
-    compile 'com.android.support:support-v4:23.4.0'
-    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    compile 'com.android.support:support-v4:26.1.0'
+    compile 'com.android.support:appcompat-v7:26.1.0'
+    compile 'com.android.support:design:26.1.0'
+    compile 'com.google.code.gson:gson:2.8.0'
+    compile 'me.dm7.barcodescanner:zxing:1.9.8'
     testCompile 'junit:junit:4.12'
 }

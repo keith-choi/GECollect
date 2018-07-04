@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -154,16 +155,16 @@ public class PrintActivity extends AppCompatActivity
         }
     }
 
-    private void oposPrintPage(int pageNo) {
+    private void oposPrintPage(int pageNo){
         try {
             oposPrintText(INITIALIZE_PRINTER, false);
-            //oposPrintText(LABEL_MODE, false);
+            // oposPrintText(LABEL_MODE, false);
             oposPrintText(LEFT_MARGIN, false);
             // Skip top margin
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 10; i++) {
                 oposPrintText(LINE_FEED, false);
             }
-            oposPrintText("单号： " + HORIZONTAL_TAB + Integer.toString(this.order.OrderNo), false);
+            oposPrintText("单号： " + HORIZONTAL_TAB + Integer.toString(order.OrderNo), false);
             if (pageNo == 0) {
                 oposPrintText(HORIZONTAL_TAB + HORIZONTAL_TAB + HORIZONTAL_TAB + "客户联", false);
             } else if (pageNo == -1) {
@@ -175,26 +176,34 @@ public class PrintActivity extends AppCompatActivity
             Integer l = 6;
             oposPrintText(LINE_FEED, false);
             // Print delivery information
-            if (this.order.CustomerCode.length() == 6) {
-                if (!TextUtils.isEmpty(this.order.DeliveryAddress)) {
-                    oposPrintText(this.order.DeliveryAddress, true);
+            if (TextUtils.isEmpty(order.CustomerCode) || order.CustomerCode.length() == 6) {
+                if (!TextUtils.isEmpty(order.DeliveryAddress)) {
+                    if (pageNo == 0) {
+                        oposPrintText(order.getMultipartMaskedText(order.DeliveryAddress), true);
+                    } else {
+                        oposPrintText(order.DeliveryAddress, true);
+                    }
                     l--;
                 }
-                if (!TextUtils.isEmpty(this.order.DeliveryCompany)) {
-                    oposPrintText(this.order.DeliveryCompany, true);
+                if (!TextUtils.isEmpty(order.DeliveryCompany)) {
+                    oposPrintText(order.DeliveryCompany, true);
                     l--;
                 }
-                if (!TextUtils.isEmpty(this.order.DeliveryContact)) {
-                    oposPrintText(this.order.DeliveryContact, true);
+                if (!TextUtils.isEmpty(order.DeliveryContact)) {
+                    oposPrintText(order.DeliveryContact, true);
                     l--;
                 }
-                if (!TextUtils.isEmpty(this.order.DeliveryPhoneNo)) {
-                    oposPrintText(this.order.DeliveryPhoneNo, true);
+                if (!TextUtils.isEmpty(order.DeliveryPhoneNo)) {
+                    if (pageNo == 0) {
+                        oposPrintText(order.getMultipartMaskedText(order.DeliveryPhoneNo), true);
+                    } else {
+                        oposPrintText(order.DeliveryPhoneNo, true);
+                    }
                     l--;
                 }
             }
-            if (!TextUtils.isEmpty(this.order.CustomerCode)) {
-                oposPrintText(this.order.CustomerCode, true);
+            if (!TextUtils.isEmpty(order.CustomerCode)) {
+                oposPrintText(order.CustomerCode, true);
                 l--;
             }
             for (int i = 0; i < l; i++) {
@@ -203,20 +212,36 @@ public class PrintActivity extends AppCompatActivity
 
             l = 8;
             oposPrintText(LINE_FEED, false);
-            if (!TextUtils.isEmpty(this.order.SenderCompany)) {
-                oposPrintText(this.order.SenderCompany, true);
+            if (!TextUtils.isEmpty(order.SenderCompany)) {
+                oposPrintText(order.SenderCompany, true);
                 l--;
             }
-            if (!TextUtils.isEmpty(this.order.SenderName)) {
-                oposPrintText(this.order.SenderName, true);
+            if (!TextUtils.isEmpty(order.PosNo)) {
+                if (pageNo > 0) {
+                    oposPrintText(order.getMultipartMaskedText(order.PosNo), true);
+                } else {
+                    oposPrintText(order.PosNo, true);
+                }
                 l--;
             }
-            if (!TextUtils.isEmpty(this.order.SenderAddress)) {
-                oposPrintText(this.order.SenderAddress, true);
+            if (!TextUtils.isEmpty(order.SenderName)) {
+                oposPrintText(order.SenderName, true);
                 l--;
             }
-            if (!TextUtils.isEmpty(this.order.SenderPhoneNo)) {
-                oposPrintText(this.order.SenderPhoneNo, true);
+            if (!TextUtils.isEmpty(order.SenderAddress)) {
+                if (pageNo > 0) {
+                    oposPrintText(order.getMultipartMaskedText(order.SenderAddress), true);
+                } else {
+                    oposPrintText(order.SenderAddress, true);
+                }
+                l--;
+            }
+            if (!TextUtils.isEmpty(order.SenderPhoneNo)) {
+                if (pageNo > 0) {
+                    oposPrintText(order.getMultipartMaskedText(order.SenderPhoneNo), true);
+                } else {
+                    oposPrintText(order.SenderPhoneNo, true);
+                }
                 l--;
             }
             for (int i = 0; i < l; i++) {
@@ -225,52 +250,66 @@ public class PrintActivity extends AppCompatActivity
 
             oposPrintText(DEFALUT_LEFT_MARGIN, false);
             // Print order information
-            String line = this.order.Description + "   " + Integer.toString(this.order.Qty) + "件";
+            String line = order.Description + "   " + Integer.toString(order.Qty) + "件";
             oposPrintText(line, true);
-            line = "服务类型： " + (this.order.DeliveryMethod == 1 ? "自提" : "送货");
+            line = "服务类型： " + (order.DeliveryMethod == 1 ? "自提" : "送货");
             oposPrintText(line, true);
-            line = "付款方式： " + (this.order.PaymentMethod == 1 ? "深圳付" : "香港付");
+            line = "付款方式： " + (order.PaymentMethod == 1 ? "深圳付" : "香港付");
             oposPrintText(line, true);
-            if (this.order.CollectAmount > 0) {
+            if (order.CollectAmount > 0) {
                 DecimalFormat df = new DecimalFormat("0.00");
-                line = "代收款（人民币）： " + df.format(this.order.CollectAmount);
+                line = "代收款（人民币）： " + df.format(order.CollectAmount);
                 oposPrintText(line, true);
             }
-            if (!TextUtils.isEmpty(this.order.Remarks)) {
-                line = "备注： " + HORIZONTAL_TAB + this.order.Remarks;
+            if (!TextUtils.isEmpty(order.Remarks)) {
+                line = "备注： " + HORIZONTAL_TAB + order.Remarks;
                 oposPrintText(line, true);
             }
 
             // Print barcode of order id
-            //oposPrintText(new String(new byte[] {0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x43, 0x06}), false);
+            // oposPrintText(new String(new byte[] {0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x43, 0x06}), false);
             String suffix = pageNo > 0 ? "-" + Integer.toString(pageNo) : "";
             posPrinter.printBarCode(
                     POSPrinterConst.PTR_S_RECEIPT,
-                    this.order.id + suffix,
+                    order.id + suffix,
                     POSPrinterConst.PTR_BCS_QRCODE,
-                    196, 196, 0, 0
+                    0, 300, 0, 0
             );
 
             // Print carton information
             if (pageNo > 0) {
-                String text = String.format("箱号 %s / %s", pageNo, this.order.Qty);
+                String text = String.format("箱号 %s / %s", pageNo, order.Qty);
                 oposPrintText(ALIGNMENT_RIGHT + text, true);
             }
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+
+            oposPrintText("由" + order.CollectedBy + "于" + formatter.format(order.CollectTime) + "取件", true);
             oposPrintText("打印时间： " + formatter.format(new Date()), true);
 
-            oposPrintText(FORM_FEED, false);
-            // Print paper cutting area
-            //for (int i = 0; i < l; i++) {
-            //    oposPrintText(LINE_FEED, false);
-            //}
+            if (pageNo > 0) {
+                String barcode = Integer.toString(order.OrderNo);
+                if (order.Qty > 1) {
+                    barcode += "-" + Integer.toString(pageNo);
+                }
+                oposPrintText(LINE_FEED, false);
+                posPrinter.printBarCode(
+                        POSPrinterConst.PTR_S_RECEIPT,
+                        barcode,
+                        POSPrinterConst.PTR_BCS_Code39,
+                        50, 3,
+                        POSPrinterConst.PTR_BC_CENTER,
+                        POSPrinterConst.PTR_BC_TEXT_BELOW
+                );
+            }
 
-            // Adjust page length
-            //oposPrintText(new String(new byte[] { 0x1b, 0x4a, 0x31 }), false);
+            oposPrintText(FORM_FEED, false);
+
+            Thread.currentThread().sleep(2000);
 
         } catch (Exception e) {
             Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
         }
+
     }
 
     private void oposPrintText(String data, boolean lineFeed) throws JposException {
@@ -298,7 +337,11 @@ public class PrintActivity extends AppCompatActivity
                             BXLConfigLoader.DEVICE_BUS_BLUETOOTH,
                             device.getAddress()
                     );
-                    bxlConfigLoader.saveFile();
+                    try {
+                        bxlConfigLoader.saveFile();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
 
                     posPrinter.open(this.printerName);
                     posPrinter.claim(0);
