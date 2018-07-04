@@ -101,4 +101,14 @@
         android:onClick="showNewOrders"
         android:text="没有新单" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignWithParentIfMissing="false"
+        android:layout_below="@+id/button3"
+        android:gravity="center"
+        android:text="版本号: 0.9.8"
+        android:textAlignment="center" />
+
 </RelativeLayout>
